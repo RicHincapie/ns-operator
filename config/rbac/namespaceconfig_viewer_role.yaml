@@ -1,0 +1,27 @@
+# permissions for end users to view namespaceconfigs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: namespaceconfig-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: operator
+    app.kubernetes.io/part-of: operator
+    app.kubernetes.io/managed-by: kustomize
+  name: namespaceconfig-viewer-role
+rules:
+- apiGroups:
+  - ric.ric.com
+  resources:
+  - namespaceconfigs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ric.ric.com
+  resources:
+  - namespaceconfigs/status
+  verbs:
+  - get
