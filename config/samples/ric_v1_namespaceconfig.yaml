@@ -7,6 +7,9 @@ metadata:
     app.kubernetes.io/part-of: operator
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: operator
-  name: namespaceconfig-sample
+  name: johannita-bonita
 spec:
-  # TODO(user): Add fields here
+  labels:
+    foo: bar
+    bar: foo
+  namespacePrefix: dev-
