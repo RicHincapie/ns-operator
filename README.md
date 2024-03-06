@@ -1,4 +1,4 @@
-# operator
+# ns-operator
 Deploys an operator that creates namespaces, prefixes and labels them.
 
 ## Description
