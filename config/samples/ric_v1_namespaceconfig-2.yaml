@@ -1,0 +1,16 @@
+apiVersion: ric.ric.com/v1
+kind: NamespaceConfig
+metadata:
+  labels:
+    app.kubernetes.io/name: namespaceconfig
+    app.kubernetes.io/instance: namespaceconfig-sample
+    app.kubernetes.io/part-of: operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: operator
+  name: ric
+spec:
+  labels:
+    foo: bar
+    bar: foo
+    istio-injection: enabled
+  namespacePrefix: dev-
