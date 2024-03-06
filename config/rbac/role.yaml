@@ -33,6 +33,11 @@ rules:
   resources:
   - namespaceconfigs/finalizers
   verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
   - update
 - apiGroups:
   - ric.ric.com

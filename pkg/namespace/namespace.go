@@ -59,13 +59,16 @@ func MapToStrings(m map[string]string) string {
 }
 
 // Compare maps and give priority to values in map1 (CRD) than in map2 (NS).
-// Deletes labels present in map2 but not in map1.
-func CompareMaps(map1 map[string]string, map2 map[string]string) map[string]string {
+// Keeps labels present in map2 but not in map1.
+func MergeMaps(map1 map[string]string, map2 map[string]string) map[string]string {
 	diff := make(map[string]string)
-	for key1, value1 := range map1{
-		value2, exists := map2[key1]
-		if !exists || value2 != value1 {
-			diff[key1] = value1
+	for key1, value1 := range map1 {
+		diff[key1] = value1
+	}
+	for key2, value2 := range map2 {
+		if _, exists := diff[key2]; !exists &&
+			strings.Contains(key2, "kubernetes.io") {
+			diff[key2] = value2
 		}
 	}
 	return diff

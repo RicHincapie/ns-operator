@@ -7,9 +7,10 @@ metadata:
     app.kubernetes.io/part-of: operator
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: operator
-  name: johannita-bonita
+  name: johis
 spec:
   labels:
     foo: bar
     bar: foo
+    istio-injection: enabled
   namespacePrefix: dev-
