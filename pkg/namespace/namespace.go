@@ -73,3 +73,15 @@ func MergeMaps(map1 map[string]string, map2 map[string]string) map[string]string
 	}
 	return diff
 }
+
+// Takes ns name and strips a prefix if there is any
+func DeriveNamespaceConfigNameFromNamespace(nsName string) string {
+	divided := strings.Split(nsName, "-")
+	if len(divided) > 1 {
+		noPrefixName := strings.Join(divided[1:], "")
+		return noPrefixName
+	} else {
+		return nsName
+	}
+
+}

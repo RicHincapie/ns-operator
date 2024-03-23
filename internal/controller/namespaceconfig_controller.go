@@ -26,7 +26,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	ricv1 "github.com/RicHincapie/ns-operator/api/v1"
 	namespaceHlp "github.com/RicHincapie/ns-operator/pkg/namespace"
@@ -37,6 +39,12 @@ type NamespaceConfigReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
+
+const (
+	annOwnKey    string = "ric.com/owner"
+	annOwnValue  string = "ns-operator"
+	crdFinalizer string = "ric.com/namespaceconfig"
+)
 
 //+kubebuilder:rbac:groups=ric.ric.com,resources=namespaceconfigs,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=ric.ric.com,resources=namespaceconfigs/status,verbs=get;update;patch
@@ -55,10 +63,11 @@ type NamespaceConfigReconciler struct {
 
 func (r *NamespaceConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
+	annotations := make(map[string]string)
+	annotations[annOwnKey] = annOwnValue
 
 	crdInstance := &ricv1.NamespaceConfig{}
 	var namespace corev1.Namespace
-	const crdFinalizer string = "ric.com/namespaceconfig"
 
 	workingNs := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{},
@@ -75,8 +84,9 @@ func (r *NamespaceConfigReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}
 	nsFullName := namespaceHlp.GenerateNamespaceName(crdInstance.Name, crdInstance.Spec.NamespacePrefix)
 	labelsInCrd := crdInstance.Spec.Labels
-	workingNs.Name = nsFullName
-	workingNs.ObjectMeta.Labels = labelsInCrd
+	workingNs.SetName(nsFullName)
+	workingNs.SetLabels(labelsInCrd)
+	workingNs.SetAnnotations(annotations)
 	// workingNs.Finalizers = append(workingNs.Finalizers, crdFinalizer)
 	// Check if its not being deleted and needs the finalizer field to be set
 	if crdInstance.DeletionTimestamp.IsZero() {
@@ -104,10 +114,10 @@ func (r *NamespaceConfigReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 			return ctrl.Result{}, nil
 		}
 		// Check labels in live ns
-		labelsInLiveNs := namespace.Labels
+		labelsInLiveNs := namespace.GetLabels()
 		labelsToUpdate := namespaceHlp.MergeMaps(labelsInCrd, labelsInLiveNs)
 		// Enforces labels in ns
-		workingNs.Labels = labelsToUpdate
+		workingNs.SetLabels(labelsToUpdate)
 		if err = r.Update(ctx, workingNs); err != nil {
 			log.Log.Error(err, "Could not update labels "+
 				namespaceHlp.MapToStrings(labelsToUpdate)+
@@ -131,9 +141,28 @@ func (r *NamespaceConfigReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	return ctrl.Result{}, nil
 }
 
-// SetupWithManager sets up the controller with the Manager.
 func (r *NamespaceConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&ricv1.NamespaceConfig{}).
+		Watches(
+			&corev1.Namespace{},
+			handler.EnqueueRequestsFromMapFunc(
+				func(ctx context.Context, objectTriggeringReconcile client.Object) []reconcile.Request {
+					if objectTriggeringReconcile.GetAnnotations()[annOwnKey] == annOwnValue {
+						name := namespaceHlp.DeriveNamespaceConfigNameFromNamespace(objectTriggeringReconcile.GetName())
+						return []reconcile.Request{{NamespacedName: types.NamespacedName{
+							Namespace: "operator-ric",
+							Name:      name,
+						}}}
+					}
+					return nil
+				})).
 		Complete(r)
 }
+
+// // SetupWithManager sets up the controller with the Manager.
+// func (r *NamespaceConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
+// 	return ctrl.NewControllerManagedBy(mgr).
+// 		For(&ricv1.NamespaceConfig{}).
+// 		Complete(r)
+// }
